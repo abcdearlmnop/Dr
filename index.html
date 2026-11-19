@@ -1,0 +1,645 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>DxPath – bedside diagnostic aid</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Public+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+:root{
+  --paper:#F3F5F4;--card:#FFFFFF;--ink:#16233A;--muted:#5A6576;--line:#D6DCE1;
+  --accent:#1F4E8C;--accent-ink:#FFFFFF;--accent-soft:#E4ECF7;
+  --danger:#B3261E;--danger-bg:#FBEAE8;--warn:#8F5300;--warn-bg:#FFF2DC;
+  --ok:#2E6B4A;--ok-bg:#E4F1E9;--track:#E2E7EB;color-scheme:light;
+}
+@media (prefers-color-scheme:dark){
+  :root{
+    --paper:#0F1622;--card:#172131;--ink:#E6ECF3;--muted:#9AA6B6;--line:#2A3749;
+    --accent:#86AEEA;--accent-ink:#0F1622;--accent-soft:#1D2D45;
+    --danger:#F2867D;--danger-bg:#3A1C1B;--warn:#F0B35A;--warn-bg:#33270F;
+    --ok:#7FC79F;--ok-bg:#15301F;--track:#243245;color-scheme:dark;
+  }
+}
+*{box-sizing:border-box}
+html,body{margin:0}
+body{background:var(--paper);color:var(--ink);font:16px/1.5 "Public Sans",system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;-webkit-font-smoothing:antialiased}
+button,input,select{font:inherit;color:inherit}
+:focus-visible{outline:3px solid var(--accent);outline-offset:2px}
+.wrap{max-width:1120px;margin:0 auto;padding:16px 16px 64px}
+header.top{display:flex;align-items:baseline;justify-content:space-between;gap:12px;flex-wrap:wrap;padding:8px 0 12px;border-bottom:2px solid var(--ink)}
+.brand{font-weight:800;font-size:1.5rem;letter-spacing:-.02em}
+.brand small{display:block;font-weight:500;font-size:.85rem;color:var(--muted);letter-spacing:0}
+.steps{display:flex;gap:4px;list-style:none;margin:0;padding:0;font-size:.85rem}
+.steps li{padding:4px 10px;border-radius:999px;color:var(--muted);border:1px solid var(--line)}
+.steps li.on{background:var(--ink);color:var(--paper);border-color:var(--ink)}
+.steps li.done{color:var(--ink)}
+.notice{margin:14px 0;padding:10px 14px;border-left:4px solid var(--warn);background:var(--warn-bg);font-size:.88rem;border-radius:0 6px 6px 0}
+.grid{display:grid;grid-template-columns:minmax(0,1fr) 340px;gap:24px;align-items:start;margin-top:12px}
+@media (max-width:860px){.grid{grid-template-columns:1fr}.aside{order:-1}}
+.panel{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:18px}
+h1{font-size:1.6rem;line-height:1.2;margin:4px 0 6px;letter-spacing:-.015em}
+h2{font-size:1.15rem;margin:0 0 10px}
+h3{font-size:1rem;margin:16px 0 6px}
+p.lead{color:var(--muted);margin:0 0 16px}
+label.f{display:block;font-weight:600;font-size:.9rem;margin-bottom:6px}
+.row{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:16px}
+input[type=number],select{width:100%;padding:10px 12px;border:1px solid var(--line);border-radius:8px;background:var(--card)}
+.cc-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:8px}
+.cc{text-align:left;padding:12px;border:1px solid var(--line);border-radius:8px;background:var(--card);cursor:pointer}
+.cc b{display:block}
+.cc span{font-size:.8rem;color:var(--muted)}
+.cc[aria-pressed=true]{border-color:var(--accent);background:var(--accent-soft);box-shadow:inset 0 0 0 1px var(--accent)}
+.flags{margin-top:16px;padding:12px 14px;border:1px solid var(--danger);background:var(--danger-bg);border-radius:8px}
+.flags b{color:var(--danger)}
+.flags ul{margin:6px 0 0;padding-left:18px;font-size:.9rem}
+.q{display:grid;grid-template-columns:1fr auto;gap:10px;align-items:center;padding:12px 0;border-bottom:1px solid var(--line)}
+.q:last-child{border-bottom:0}
+.q .t{font-size:.95rem}
+.q .tests{display:block;font-size:.78rem;color:var(--muted);margin-top:2px}
+.seg{display:inline-flex;border:1px solid var(--line);border-radius:8px;overflow:hidden}
+.seg button{border:0;background:transparent;padding:8px 12px;min-width:46px;cursor:pointer;font-size:.88rem;font-weight:600;color:var(--muted)}
+.seg button+button{border-left:1px solid var(--line)}
+.seg button[aria-pressed=true][data-v=y]{background:var(--accent);color:var(--accent-ink)}
+.seg button[aria-pressed=true][data-v=n]{background:var(--ink);color:var(--paper)}
+@media (max-width:520px){.q{grid-template-columns:1fr}.seg{justify-self:start}}
+.nav{display:flex;justify-content:space-between;gap:10px;margin-top:18px;flex-wrap:wrap}
+.btn{padding:11px 18px;border-radius:8px;border:1px solid var(--ink);background:var(--card);font-weight:700;cursor:pointer}
+.btn.primary{background:var(--ink);color:var(--paper)}
+.btn:disabled{opacity:.4;cursor:not-allowed}
+.aside{position:sticky;top:12px}
+@media (max-width:860px){.aside{position:static}}
+.ddx{list-style:none;margin:0;padding:0}
+.ddx li{padding:8px 0}
+.ddx .nm{display:flex;justify-content:space-between;gap:8px;font-size:.9rem;font-weight:600}
+.ddx .pc{font-variant-numeric:tabular-nums}
+.bar{height:8px;background:var(--track);border-radius:4px;margin-top:4px;overflow:hidden}
+.bar i{display:block;height:100%;background:var(--accent);border-radius:4px;transition:width .35s ease}
+.ddx li.out .nm{color:var(--muted);font-weight:500}
+.ddx li.out .bar i{background:var(--muted)}
+.tag{display:inline-block;font-size:.7rem;font-weight:700;padding:1px 6px;border-radius:4px;margin-left:6px;vertical-align:1px}
+.tag.miss{background:var(--danger-bg);color:var(--danger)}
+.tag.lead{background:var(--ok-bg);color:var(--ok)}
+.tag.pos{background:var(--accent-soft);color:var(--accent)}
+.tag.low{background:var(--track);color:var(--muted)}
+.hint{font-size:.8rem;color:var(--muted);margin-top:10px}
+.dxcard{border:1px solid var(--line);border-radius:10px;margin-bottom:12px;background:var(--card);overflow:hidden}
+.dxcard summary{list-style:none;cursor:pointer;padding:14px 16px;display:grid;grid-template-columns:1fr auto;gap:6px 12px;align-items:center}
+.dxcard summary::-webkit-details-marker{display:none}
+.dxcard .title{font-weight:700;font-size:1.05rem}
+.dxcard .big{font-size:1.5rem;font-weight:800;font-variant-numeric:tabular-nums}
+.dxcard .why{grid-column:1/-1;font-size:.82rem;color:var(--muted)}
+.dxcard .body{padding:0 16px 14px;border-top:1px solid var(--line)}
+.dxcard ul{margin:4px 0;padding-left:18px}
+.dxcard li{margin:3px 0;font-size:.93rem}
+.dispo{padding:8px 12px;background:var(--accent-soft);border-radius:6px;font-size:.92rem;margin-top:10px}
+.src{font-size:.8rem;color:var(--muted);margin-top:10px}
+.missbox{padding:12px 14px;border:1px dashed var(--danger);border-radius:8px;margin:10px 0 16px;font-size:.9rem}
+.missbox b{color:var(--danger)}
+textarea{width:100%;min-height:180px;padding:10px;border:1px solid var(--line);border-radius:8px;background:var(--card);font:13px/1.45 ui-monospace,Menlo,Consolas,monospace}
+footer{margin-top:28px;font-size:.8rem;color:var(--muted)}
+footer ol{padding-left:18px}
+.sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0)}
+@media (prefers-reduced-motion:reduce){.bar i{transition:none}}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header class="top">
+    <div class="brand">DxPath<small>History → exam → differential → CPG-based plan</small></div>
+    <ol class="steps" id="steps"></ol>
+  </header>
+  <div class="notice">Clinical decision support only. It does not replace judgment, local protocols or antibiograms. Doses are for non-pregnant adults with normal renal and hepatic function; verify before prescribing.</div>
+  <div class="grid">
+    <main id="main"></main>
+    <aside class="aside" id="aside"></aside>
+  </div>
+  <footer id="foot"></footer>
+</div>
+
+<script>
+/* ============================================================
+   KNOWLEDGE BASE
+   Each complaint: dx (prior weight, optional age/sex modifier,
+   miss = can't-miss diagnosis), hx (history items), pe (exam items).
+   lr: { dxId: [LR if present, LR if absent] }
+   LRs are approximations drawn from JAMA Rational Clinical
+   Examination series, McGee's Evidence-Based Physical Diagnosis
+   and guideline documents. Edit freely.
+   ============================================================ */
+const KB = {
+chest:{
+  name:"Chest pain", hint:"Acute or recent chest discomfort",
+  flags:["Hypotension, shock or new arrhythmia","SpO₂ <90% or severe distress","Sudden tearing pain radiating to back","ST elevation on ECG – activate STEMI pathway"],
+  dx:[
+    {id:"acs",name:"Acute coronary syndrome",prior:20,miss:true,mod:(a,s)=>(a<30?.15:a<40?.4:a<55?1:1.6)*(s==="M"?1.3:1),
+     m:{labs:["12-lead ECG within 10 minutes of arrival; repeat if pain recurs","High-sensitivity troponin at 0 and 1–2 h (0/1h or 0/2h algorithm)","CBC, creatinine/eGFR, electrolytes (K, Mg), RBS/HbA1c, lipid profile","Chest X-ray; echocardiogram for wall motion and LV function"],
+     tx:["Aspirin 162–325 mg chewed, then 75–100 mg daily","P2Y12 inhibitor: ticagrelor 180 mg load then 90 mg BID, or clopidogrel 300–600 mg load then 75 mg daily","Anticoagulation: enoxaparin 1 mg/kg SC q12h (adjust for CrCl <30) or UFH","High-intensity statin: atorvastatin 80 mg daily","Nitroglycerin 0.4 mg SL q5 min ×3 for pain (avoid if SBP <90, RV infarct, PDE-5 inhibitor use)","Oral beta-blocker within 24 h if no heart failure, shock or bradycardia","STEMI: primary PCI (door-to-device ≤90 min); fibrinolysis within 30 min if PCI not available within 120 min"],
+     dispo:"Admit to monitored/CCU bed. STEMI or very high-risk NSTE-ACS: immediate invasive strategy.",
+     src:"2025 ACC/AHA/ACEP/NAEMSP/SCAI ACS Guideline; 2023 ESC ACS Guidelines; 2021 AHA/ACC Chest Pain Guideline"}},
+    {id:"pe",name:"Pulmonary embolism",prior:6,miss:true,
+     m:{labs:["Wells score; if low pre-test probability apply PERC rule","D-dimer (age-adjusted: age ×10 µg/L if >50) when probability is low/intermediate","CT pulmonary angiography if D-dimer positive or probability high; V/Q scan if contrast contraindicated","ECG, troponin, BNP/NT-proBNP, bedside echo for RV strain; lower-limb compression ultrasound","CBC, creatinine, PT/INR, aPTT"],
+     tx:["Start anticoagulation while awaiting imaging if probability is high","Apixaban 10 mg BID ×7 d then 5 mg BID, or rivaroxaban 15 mg BID ×21 d then 20 mg daily; or enoxaparin 1 mg/kg SC q12h","High-risk PE (shock/SBP <90): systemic thrombolysis, alteplase 100 mg IV over 2 h, unless contraindicated","Treat for at least 3 months; longer if unprovoked or ongoing risk factor"],
+     dispo:"Stratify with sPESI and RV/troponin: low risk may be managed as outpatient; intermediate–high and high risk admit.",
+     src:"2019 ESC Acute PE Guidelines; ASH 2020 VTE Guidelines; CHEST 2021 VTE update"}},
+    {id:"aad",name:"Acute aortic dissection",prior:2,miss:true,mod:a=>a<40?.3:a>60?1.6:1,
+     m:{labs:["CT angiography of chest, abdomen and pelvis (TEE if unstable)","ECG, troponin, CBC, creatinine, type and crossmatch","Bedside echo for pericardial effusion and aortic root"],
+     tx:["IV beta-blocker first (esmolol or labetalol): HR ≤60, then SBP 100–120 mmHg","Add IV vasodilator (e.g., nicardipine) only after rate control","IV opioid analgesia","Avoid antiplatelets/anticoagulants until dissection is excluded"],
+     dispo:"Type A: emergency cardiothoracic surgery. Type B uncomplicated: ICU medical therapy.",
+     src:"2022 ACC/AHA Aortic Disease Guideline; 2024 ESC Peripheral Arterial and Aortic Diseases"}},
+    {id:"ptx",name:"Pneumothorax",prior:4,miss:true,mod:a=>a<40?1.5:1,
+     m:{labs:["Upright PA chest X-ray; point-of-care lung ultrasound (absent lung sliding)","CT chest if X-ray equivocal or secondary pneumothorax","ABG if hypoxemic or with lung disease"],
+     tx:["Tension pneumothorax: immediate needle decompression then chest tube – do not wait for X-ray","Primary, minimally symptomatic: conservative care or ambulatory device","Symptomatic/large: needle aspiration or small-bore chest drain","Supplemental oxygen; analgesia; refer to pulmonology for recurrence prevention"],
+     dispo:"Admit secondary pneumothorax and any patient needing a drain.",
+     src:"BTS Guideline for Pleural Disease 2023"}},
+    {id:"peri",name:"Acute pericarditis",prior:5,
+     m:{labs:["ECG: diffuse concave ST elevation with PR depression","CRP/ESR, troponin (myopericarditis if elevated), CBC","Echocardiogram for effusion/tamponade","Chest X-ray; consider TB work-up (endemic) if effusion or no response"],
+     tx:["Ibuprofen 600 mg q8h (or aspirin 750–1000 mg q8h) for 1–2 weeks with PPI cover, then taper","Colchicine 0.5 mg BID (0.5 mg daily if <70 kg) for 3 months","Restrict strenuous exercise until symptoms and CRP resolve","Avoid corticosteroids as first-line"],
+     dispo:"Outpatient if no high-risk features (fever >38 °C, large effusion, tamponade, troponin rise, no response to NSAID in 1 week).",
+     src:"ESC Guidelines on Pericardial Diseases (2015) and 2025 ESC Myocarditis & Pericarditis Guidelines"}},
+    {id:"gerd",name:"GERD / esophageal pain",prior:20,
+     m:{labs:["Exclude cardiac cause first in patients with risk factors (ECG ± troponin)","Endoscopy if alarm features: dysphagia, weight loss, GI bleeding, anemia, persistent vomiting"],
+     tx:["PPI trial: omeprazole 20–40 mg once daily before breakfast for 8 weeks","Lifestyle: weight loss, elevate head of bed, avoid late meals, alcohol and smoking"],
+     dispo:"Outpatient follow-up in 4–8 weeks.",
+     src:"ACG Clinical Guideline for GERD 2022"}},
+    {id:"msk",name:"Musculoskeletal chest wall pain",prior:30,mod:a=>a<40?1.4:1,
+     m:{labs:["Diagnosis of exclusion; ECG if any cardiac risk factor or atypical feature","Chest X-ray only if trauma or pulmonary signs"],
+     tx:["Paracetamol 500–1000 mg q6h PRN (max 4 g/day) or topical/oral NSAID short course","Reassurance, activity modification, heat"],
+     dispo:"Outpatient. Return if pain changes in character or exertional symptoms appear.",
+     src:"2021 AHA/ACC Chest Pain Guideline; Harrison’s Principles of Internal Medicine"}}
+  ],
+  hx:[
+    {id:"c1",q:"Pain brought on by exertion and relieved by rest",s:"exertional pain",lr:{acs:[2.4,.7],msk:[.6,1]}},
+    {id:"c2",q:"Radiates to one or both arms or shoulders",s:"radiation to arm(s)",lr:{acs:[2.6,.8]}},
+    {id:"c3",q:"Associated diaphoresis",s:"diaphoresis",lr:{acs:[2,.9]}},
+    {id:"c4",q:"Pleuritic (worse on deep breathing)",s:"pleuritic pain",lr:{acs:[.2,1.2],pe:[1.5,.8],peri:[2.5,.6],ptx:[2,.7],msk:[1.5,.9]}},
+    {id:"c5",q:"Worse lying flat, better sitting forward",s:"positional pain",lr:{peri:[5,.6]}},
+    {id:"c6",q:"Sudden, tearing or ripping pain radiating to the back",s:"tearing pain to back",lr:{aad:[6,.3],acs:[.8,1]}},
+    {id:"c7",q:"Sudden-onset shortness of breath",s:"sudden dyspnea",lr:{pe:[2.5,.6],ptx:[2.5,.6]}},
+    {id:"c8",q:"Recent surgery, immobilization, long travel, active cancer or prior DVT/PE",s:"VTE risk factor",lr:{pe:[3,.7]}},
+    {id:"c9",q:"Hemoptysis",s:"hemoptysis",lr:{pe:[2,.95]}},
+    {id:"c10",q:"Burning, meal-related, with sour taste or regurgitation",s:"reflux features",lr:{gerd:[3,.6],acs:[.8,1]}},
+    {id:"c11",q:"Diabetes, hypertension, smoking, dyslipidemia or premature family CAD",s:"CAD risk factors",lr:{acs:[1.8,.6]}},
+    {id:"c12",q:"Known coronary disease or previous MI",s:"known CAD",lr:{acs:[2.2,.9]}},
+    {id:"c13",q:"Viral illness in the past 2–3 weeks",s:"recent viral illness",lr:{peri:[2.5,.8]}},
+    {id:"c14",q:"Tall thin build, smoker, COPD or recent chest trauma",s:"PTX risk",lr:{ptx:[3,.8]}},
+    {id:"c15",q:"Worse with twisting or movement; recent strain",s:"movement-related",lr:{msk:[3,.6],acs:[.6,1]}}
+  ],
+  pe:[
+    {id:"cp1",q:"HR >100 or SBP <90",s:"tachycardia/hypotension",lr:{pe:[2,.8],aad:[1.3,1],acs:[1.3,1]}},
+    {id:"cp2",q:"Pulse deficit or arm SBP difference >20 mmHg",s:"pulse deficit",lr:{aad:[5.7,.7]}},
+    {id:"cp3",q:"Focal neurologic deficit",s:"focal deficit",lr:{aad:[6,.9]}},
+    {id:"cp4",q:"New diastolic murmur (aortic regurgitation)",s:"AR murmur",lr:{aad:[1.5,.9]}},
+    {id:"cp5",q:"Pericardial friction rub",s:"friction rub",lr:{peri:[10,.8]}},
+    {id:"cp6",q:"Pain reproduced by palpation of chest wall",s:"reproducible tenderness",lr:{msk:[3,.6],acs:[.3,1.1]}},
+    {id:"cp7",q:"Unilateral absent breath sounds with hyperresonance",s:"unilateral absent BS",lr:{ptx:[10,.2]}},
+    {id:"cp8",q:"New S3, basal crackles or hypotension",s:"S3/crackles",lr:{acs:[2,.95]}},
+    {id:"cp9",q:"Unilateral calf swelling or tenderness",s:"DVT signs",lr:{pe:[3,.8]}},
+    {id:"cp10",q:"SpO₂ <94% on room air",s:"hypoxemia",lr:{pe:[2,.7],ptx:[2,.8]}},
+    {id:"cp11",q:"Epigastric tenderness",s:"epigastric tenderness",lr:{gerd:[1.5,.9]}}
+  ]
+},
+fever:{
+  name:"Fever", hint:"Acute febrile illness (tropical setting)",
+  flags:["Hypotension, narrow pulse pressure (≤20 mmHg) or cold extremities","Dengue warning signs: abdominal pain, persistent vomiting, mucosal bleeding, lethargy, fluid accumulation","Altered sensorium, neck stiffness or seizures","Oliguria, jaundice or respiratory distress"],
+  dx:[
+    {id:"den",name:"Dengue",prior:20,
+     m:{labs:["CBC with platelet and hematocrit – baseline then serial (daily or more in critical phase)","NS1 antigen (days 1–5) or dengue IgM/IgG (from day 5)","AST/ALT, albumin; creatinine, electrolytes if with warning signs","Ultrasound / chest X-ray (lateral decubitus) for plasma leakage if warning signs"],
+     tx:["Group A (no warning signs, tolerating fluids, voiding q6h): home care, oral fluids/ORS, paracetamol for fever","Avoid NSAIDs, aspirin and IM injections","Group B (warning signs or comorbid): admit; isotonic crystalloid if oral intake inadequate, e.g., 5–7 mL/kg/h ×1–2 h then taper per hematocrit and clinical response","Group C (severe dengue/shock): emergency crystalloid resuscitation per WHO protocol; transfuse for significant bleeding","Teach warning signs; critical phase is around defervescence"],
+     dispo:"Classify Group A/B/C each visit. Daily review until 48 h after defervescence.",
+     src:"DOH dengue clinical management guidelines; PhilHealth Circular 2026-0009; WHO Dengue Guidelines 2009 & Handbook 2012"}},
+    {id:"vir",name:"Viral URTI / influenza",prior:30,
+     m:{labs:["Usually none; influenza/COVID-19 rapid test if it changes management","CBC if fever persists >3 days or toxic"],
+     tx:["Paracetamol 500–1000 mg q6h PRN, fluids, rest","Oseltamivir 75 mg BID ×5 d for suspected influenza if high-risk, hospitalized or severe (best within 48 h)","No antibiotics for uncomplicated viral illness"],
+     dispo:"Outpatient with return precautions.",
+     src:"IDSA 2018 Influenza Guideline; WHO"}},
+    {id:"uti",name:"Urinary tract infection / pyelonephritis",prior:12,mod:(a,s)=>s==="F"?1.6:.6,
+     m:{labs:["Urinalysis (pyuria, nitrite)","Urine culture and sensitivity for pyelonephritis, complicated UTI, males, recurrence","CBC, creatinine; blood culture if septic","KUB ultrasound if obstruction suspected or no response in 48–72 h"],
+     tx:["Uncomplicated cystitis: nitrofurantoin 100 mg BID ×5 d, or fosfomycin 3 g single dose","Pyelonephritis, outpatient: oral fluoroquinolone (e.g., ciprofloxacin 500 mg BID ×7 d) only if local resistance is low; otherwise first dose of ceftriaxone 1 g IV then oral agent per culture","Pyelonephritis, inpatient: ceftriaxone 1–2 g IV daily; adjust to culture"],
+     dispo:"Admit if septic, vomiting, pregnant or obstructed.",
+     src:"PSMID Philippine CPG on UTI in Adults 2015; IDSA 2011 & 2025 cUTI Guidelines"}},
+    {id:"typ",name:"Typhoid fever",prior:6,
+     m:{labs:["Blood culture (highest yield in first week); bone marrow culture if pre-treated","CBC (leukopenia, relative), AST/ALT","Serologic rapid tests have limited accuracy – interpret with caution"],
+     tx:["Uncomplicated: azithromycin 500 mg–1 g PO daily ×7 d","Severe or unable to take oral: ceftriaxone 2 g IV daily ×10–14 d","Fluoroquinolone only if susceptibility confirmed"],
+     dispo:"Admit if toxic, GI bleeding, perforation signs or altered sensorium.",
+     src:"WHO typhoid guidance; PSMID antimicrobial guidance; Sanford Guide"}},
+    {id:"lep",name:"Leptospirosis",prior:5,
+     m:{labs:["CBC, creatinine, BUN, potassium, urinalysis","AST/ALT, bilirubin, CPK","Leptospira IgM / PCR (early) / MAT","Chest X-ray if dyspneic (pulmonary hemorrhage)"],
+     tx:["Mild: doxycycline 100 mg BID ×7 d (or azithromycin)","Moderate–severe: penicillin G 1.5 MU IV q6h or ceftriaxone 1 g IV daily ×7 d","Early nephrology referral for oliguria/rising creatinine (dialysis)","Post-flood exposure prophylaxis: doxycycline 200 mg per CPG risk category"],
+     dispo:"Admit moderate–severe disease (jaundice, oliguria, bleeding, dyspnea).",
+     src:"Philippine CPG on Leptospirosis (PSMID/PSN/PCCP 2010); DOH"}},
+    {id:"cap",name:"Community-acquired pneumonia",prior:10,
+     m:{labs:["Chest X-ray PA","Low-risk CAP: no routine labs or sputum culture","Moderate/high-risk: CBC, BUN/creatinine, electrolytes, RBS, blood cultures, sputum GS/CS, ABG if hypoxemic"],
+     tx:["Low-risk, no comorbid: amoxicillin 1 g TID, or co-amoxiclav / cefuroxime per 2020 update; macrolide alternative","Moderate-risk: IV non-antipseudomonal β-lactam (ampicillin-sulbactam, ceftriaxone, cefuroxime) + macrolide (azithromycin 500 mg daily)","High-risk: ICU; IV β-lactam + macrolide; antipseudomonal agent only if risk factors","Do not use fluoroquinolones as first-line (TB masking)"],
+     dispo:"Low-risk outpatient; moderate- and high-risk admit.",
+     src:"Philippine CPG on CAP in Immunocompetent Adults (PSMID 2016 Update; 2020 Update)"}},
+    {id:"mal",name:"Malaria",prior:2,
+     m:{labs:["Malaria smear (thick and thin) or RDT – repeat q12–24h ×3 if negative and suspicion remains","CBC, creatinine, bilirubin, RBS, G6PD before primaquine"],
+     tx:["Uncomplicated P. falciparum: artemether-lumefantrine 6-dose course + single low-dose primaquine","P. vivax: chloroquine or ACT + primaquine 14 d after G6PD testing","Severe malaria: IV artesunate 2.4 mg/kg at 0, 12, 24 h then daily"],
+     dispo:"Admit severe malaria. Notify DOH.",
+     src:"DOH Malaria Control Program Manual; WHO Guidelines for Malaria"}}
+  ],
+  hx:[
+    {id:"f1",q:"Fever for 7 days or less",s:"fever ≤7 days",lr:{den:[1.5,.3],vir:[1.2,.6],typ:[.6,1.8],lep:[1.1,.8]}},
+    {id:"f2",q:"Retro-orbital pain, myalgia or arthralgia",s:"retro-orbital pain/myalgia",lr:{den:[2.5,.5],lep:[1.5,.8]}},
+    {id:"f3",q:"Rash",s:"rash",lr:{den:[2,.8]}},
+    {id:"f4",q:"Gum or nose bleeding, petechiae",s:"bleeding",lr:{den:[3,.85],lep:[1.3,1]}},
+    {id:"f5",q:"Wading in floodwater or contact with rats/animal urine in past 2–4 weeks",s:"flood exposure",lr:{lep:[8,.3]}},
+    {id:"f6",q:"Calf pain",s:"calf pain",lr:{lep:[3,.7]}},
+    {id:"f7",q:"Dysuria, frequency or urgency",s:"urinary symptoms",lr:{uti:[5,.3]}},
+    {id:"f8",q:"Flank pain",s:"flank pain",lr:{uti:[3,.8]}},
+    {id:"f9",q:"Cough, colds or sore throat",s:"respiratory symptoms",lr:{vir:[3,.4],cap:[2,.5],den:[.6,1.1]}},
+    {id:"f10",q:"Productive cough with shortness of breath",s:"productive cough + dyspnea",lr:{cap:[4,.5],vir:[.7,1]}},
+    {id:"f11",q:"Step-ladder fever, abdominal discomfort, constipation or diarrhea; unsafe food/water",s:"enteric features",lr:{typ:[4,.5]}},
+    {id:"f12",q:"Travel to a malaria-endemic area (e.g., Palawan) in past month",s:"malaria-area travel",lr:{mal:[12,.1]}},
+    {id:"f13",q:"Jaundice or tea-colored urine",s:"jaundice",lr:{lep:[3,.9],mal:[2,.95],den:[1.2,1]}}
+  ],
+  pe:[
+    {id:"fp1",q:"Positive tourniquet test",s:"(+) tourniquet test",lr:{den:[2,.7]}},
+    {id:"fp2",q:"Conjunctival suffusion",s:"conjunctival suffusion",lr:{lep:[6,.8]}},
+    {id:"fp3",q:"Costovertebral angle tenderness",s:"CVA tenderness",lr:{uti:[3,.7]}},
+    {id:"fp4",q:"Crackles or bronchial breath sounds",s:"crackles",lr:{cap:[3,.6]}},
+    {id:"fp5",q:"Hepatomegaly or RUQ tenderness",s:"hepatomegaly",lr:{den:[1.5,.95],typ:[1.5,.9],mal:[1.5,1]}},
+    {id:"fp6",q:"Relative bradycardia or rose spots",s:"relative bradycardia",lr:{typ:[3,.9]}},
+    {id:"fp7",q:"Splenomegaly",s:"splenomegaly",lr:{mal:[3,.7],typ:[1.8,.9]}},
+    {id:"fp8",q:"Pharyngeal erythema or nasal congestion",s:"pharyngitis/coryza",lr:{vir:[2,.7]}},
+    {id:"fp9",q:"Flushed skin or maculopapular rash",s:"flush/rash",lr:{den:[2,.85]}},
+    {id:"fp10",q:"RR ≥30, SpO₂ <95% or SBP <90",s:"unstable vitals",lr:{cap:[1.5,1],den:[1.3,1]}}
+  ]
+},
+cough:{
+  name:"Cough / dyspnea", hint:"Respiratory complaint",
+  flags:["SpO₂ <90%, RR ≥30 or inability to speak in sentences","Silent chest or altered mentation","Massive hemoptysis","Hypotension or signs of shock"],
+  dx:[
+    {id:"cap",name:"Community-acquired pneumonia",prior:15,
+     m:KB_CAP()},
+    {id:"ptb",name:"Pulmonary tuberculosis",prior:10,
+     m:{labs:["Sputum Xpert MTB/RIF (GeneXpert) – first-line test","Chest X-ray PA","HIV testing, RBS/HbA1c; baseline LFTs, creatinine","Sputum smear microscopy for follow-up monitoring"],
+     tx:["Drug-susceptible TB: 2HRZE / 4HR using weight-based fixed-dose combinations","Rifampicin resistance detected: refer to PMDT facility","Screen and give TB preventive treatment to household contacts per program"],
+     dispo:"Outpatient DOTS via TB-DOTS facility; notify to ITIS.",
+     src:"DOH National TB Control Program Manual of Procedures, 6th ed.; WHO consolidated TB guidelines"}},
+    {id:"ast",name:"Asthma exacerbation",prior:10,mod:a=>a<40?1.3:.8,
+     m:{labs:["PEF or FEV₁ before and after treatment; SpO₂","ABG if severe or not improving","Chest X-ray only if complication suspected"],
+     tx:["Salbutamol 4–10 puffs pMDI via spacer q20 min in first hour (or nebulized)","Add ipratropium for severe exacerbation","Prednisolone 40–50 mg daily ×5–7 d","Controlled O₂ to SpO₂ 93–95%","Magnesium sulfate 2 g IV over 20 min if severe and unresponsive","On discharge: ICS-containing controller (ICS-formoterol preferred); check inhaler technique"],
+     dispo:"Discharge if PEF >60–80% predicted and stable; otherwise admit.",
+     src:"GINA Global Strategy for Asthma (current report)"}},
+    {id:"copd",name:"COPD exacerbation",prior:8,miss:false,mod:a=>a<40?.05:a>60?1.5:1,
+     m:{labs:["Chest X-ray; ABG if severe","CBC, electrolytes, RBS; ECG","Sputum culture if frequent exacerbations or prior antibiotics"],
+     tx:["SABA ± SAMA (salbutamol/ipratropium)","Prednisone 40 mg daily ×5 d","Antibiotic 5–7 d if increased sputum purulence (co-amoxiclav, doxycycline or macrolide)","Controlled O₂ to SpO₂ 88–92%","NIV if pH <7.35 and PaCO₂ >45 mmHg"],
+     dispo:"Admit if severe dyspnea, hypoxemia, acidosis or failed outpatient care.",
+     src:"GOLD Global Strategy for COPD (current report)"}},
+    {id:"hf",name:"Acute decompensated heart failure",prior:8,miss:true,mod:a=>a<40?.15:a>65?2:1,
+     m:{labs:["BNP or NT-proBNP","ECG, troponin, chest X-ray, lung ultrasound (B-lines)","Echocardiogram","Creatinine, electrolytes, CBC, TSH, LFTs"],
+     tx:["IV furosemide: 20–40 mg if diuretic-naive, or 1–2.5× home oral dose IV","O₂ if SpO₂ <90%; NIV for pulmonary edema with distress","IV nitrate if hypertensive and no hypotension","After stabilization: guideline-directed therapy (ARNI/ACEi/ARB, beta-blocker, MRA, SGLT2 inhibitor)"],
+     dispo:"Admit; daily weights, strict I/O, monitor K and creatinine.",
+     src:"2022 AHA/ACC/HFSA Heart Failure Guideline; 2021 ESC HF Guidelines & 2023 focused update"}},
+    {id:"bro",name:"Acute bronchitis / viral URTI",prior:30,
+     m:{labs:["None routinely","Chest X-ray only if abnormal vitals or focal chest findings"],
+     tx:["Supportive: fluids, honey, paracetamol","No antibiotics for uncomplicated acute bronchitis","Return if fever persists, dyspnea or cough >3 weeks"],
+     dispo:"Outpatient.",
+     src:"CHEST Expert Panel on Cough; CDC Adult Outpatient Treatment Recommendations"}}
+  ],
+  hx:[
+    {id:"r1",q:"Fever",s:"fever",lr:{cap:[2,.5],hf:[.5,1.2],ast:[.7,1.1],ptb:[1.2,.9]}},
+    {id:"r2",q:"Cough for 2 weeks or more",s:"cough ≥2 weeks",lr:{ptb:[4,.3],bro:[.4,1.3],cap:[.4,1.2]}},
+    {id:"r3",q:"Weight loss or night sweats",s:"weight loss/night sweats",lr:{ptb:[3,.6]}},
+    {id:"r4",q:"Hemoptysis",s:"hemoptysis",lr:{ptb:[3,.85]}},
+    {id:"r5",q:"Household or close TB contact",s:"TB contact",lr:{ptb:[3,.8]}},
+    {id:"r6",q:"Episodic wheeze with triggers or known asthma/atopy",s:"asthma history",lr:{ast:[4,.3]}},
+    {id:"r7",q:"Long smoking history (≥20 pack-years) or known COPD",s:"smoking/COPD",lr:{copd:[8,.3],ast:[.7,1]}},
+    {id:"r8",q:"Orthopnea or paroxysmal nocturnal dyspnea",s:"orthopnea/PND",lr:{hf:[2.5,.7]}},
+    {id:"r9",q:"Known heart failure or prior MI; leg swelling",s:"cardiac history",lr:{hf:[3,.6]}},
+    {id:"r10",q:"Purulent sputum",s:"purulent sputum",lr:{cap:[1.5,.8],copd:[1.5,.9]}}
+  ],
+  pe:[
+    {id:"rp1",q:"Focal crackles, bronchial breath sounds or egophony",s:"focal consolidation signs",lr:{cap:[3,.7]}},
+    {id:"rp2",q:"S3 gallop",s:"S3",lr:{hf:[11,.9]}},
+    {id:"rp3",q:"Jugular venous distension",s:"JVD",lr:{hf:[5,.7]}},
+    {id:"rp4",q:"Bilateral pitting edema",s:"edema",lr:{hf:[2,.7]}},
+    {id:"rp5",q:"Diffuse expiratory wheeze",s:"wheeze",lr:{ast:[3,.5],copd:[2.5,.7],bro:[1.2,1]}},
+    {id:"rp6",q:"Hyperinflation, prolonged expiration, reduced breath sounds",s:"hyperinflation",lr:{copd:[4,.6]}},
+    {id:"rp7",q:"Apical crackles or cervical lymphadenopathy",s:"apical crackles/nodes",lr:{ptb:[2,.9]}},
+    {id:"rp8",q:"Temperature ≥38 °C",s:"febrile",lr:{cap:[2,.6],hf:[.6,1]}},
+    {id:"rp9",q:"Clear chest on auscultation",s:"clear chest",lr:{bro:[2,.5],cap:[.5,1.2]}}
+  ]
+},
+abd:{
+  name:"Abdominal pain", hint:"Acute abdominal pain",
+  flags:["Hypotension, tachycardia or syncope","Board-like rigidity or generalized peritonitis","Hematemesis or melena","Possible pregnancy with pain or bleeding – check β-hCG now"],
+  dx:[
+    {id:"app",name:"Acute appendicitis",prior:15,miss:true,mod:a=>a>=10&&a<=30?1.5:a>60?.6:1,
+     m:{labs:["CBC (leukocytosis), CRP, urinalysis","Pregnancy test in all females of reproductive age","Alvarado or AIR score","Ultrasound first (young, female, thin); CT abdomen if equivocal"],
+     tx:["NPO, IV fluids, IV analgesia (opioids do not mask diagnosis)","Pre-operative antibiotics (e.g., cefuroxime or cefazolin + metronidazole)","Appendectomy (laparoscopic preferred); selected uncomplicated cases may receive antibiotics-first"],
+     dispo:"Surgical consult. Admit.",
+     src:"WSES Jerusalem Guidelines 2020; SAGES"}},
+    {id:"chol",name:"Acute cholecystitis",prior:10,mod:(a,s)=>(a>=40?1.4:.7)*(s==="F"?1.3:1),
+     m:{labs:["CBC, CRP, AST/ALT, ALP, GGT, bilirubin, lipase","Abdominal ultrasound (first-line)","Tokyo Guidelines 2018 severity grading"],
+     tx:["NPO, IV fluids, analgesia (NSAID or opioid)","Antibiotics: Grade I–II ceftriaxone/cefuroxime ± metronidazole or ampicillin-sulbactam","Early laparoscopic cholecystectomy (ideally within 72 h)","Grade III / unfit: percutaneous drainage"],
+     dispo:"Admit; surgical referral.",
+     src:"Tokyo Guidelines 2018 (TG18)"}},
+    {id:"pud",name:"Peptic ulcer / gastritis",prior:20,
+     m:{labs:["H. pylori test (urea breath test or stool antigen)","CBC (anemia)","EGD if alarm features or age ≥60"],
+     tx:["PPI (omeprazole 20–40 mg daily) 4–8 weeks; stop NSAIDs","H. pylori: bismuth quadruple therapy 14 d (PPI BID + bismuth + tetracycline + metronidazole)","Confirm eradication ≥4 weeks after therapy"],
+     dispo:"Outpatient unless bleeding or perforation.",
+     src:"ACG 2024 H. pylori Guideline; ACG/CAG 2017 Dyspepsia Guideline"}},
+    {id:"age",name:"Acute gastroenteritis",prior:25,
+     m:{labs:["Usually none","Electrolytes, creatinine if moderate–severe dehydration","Stool exam/culture if bloody, febrile, prolonged >7 d or outbreak"],
+     tx:["Oral rehydration solution; IV PNSS/LR if severe dehydration","Antiemetic if needed","Antibiotic only for dysentery or suspected cholera: azithromycin 500 mg daily ×3 d","Avoid loperamide if bloody diarrhea or high fever"],
+     dispo:"Outpatient if tolerating fluids.",
+     src:"IDSA 2017 Infectious Diarrhea Guideline; WHO"}},
+    {id:"panc",name:"Acute pancreatitis",prior:6,miss:true,
+     m:{labs:["Serum lipase (≥3× ULN)","CBC, BUN, creatinine, calcium, triglycerides, LFTs, RBS","Ultrasound for gallstones","CT only if diagnosis unclear or no improvement after 48–72 h"],
+     tx:["Moderate goal-directed fluids with lactated Ringer’s (avoid aggressive resuscitation)","Analgesia (opioids acceptable)","Early oral feeding as tolerated","No prophylactic antibiotics","Gallstone pancreatitis: cholecystectomy in same admission"],
+     dispo:"Admit; ICU if organ failure.",
+     src:"ACG 2024 Acute Pancreatitis Guideline; WATERFALL trial 2022"}},
+    {id:"ect",name:"Ectopic pregnancy",prior:5,miss:true,mod:(a,s)=>s==="F"&&a>=12&&a<=50?1:0,
+     m:{labs:["Urine/serum β-hCG","Transvaginal ultrasound","CBC, blood type and Rh, crossmatch"],
+     tx:["Unstable or ruptured: emergency surgery (laparoscopy/laparotomy), resuscitation","Stable, unruptured, meets criteria: methotrexate 50 mg/m² IM, β-hCG day 4 and 7","Anti-D immunoglobulin if Rh-negative"],
+     dispo:"OB-GYN emergency referral.",
+     src:"ACOG Practice Bulletin No. 193 (2018); POGS"}},
+    {id:"ston",name:"Ureterolithiasis (renal colic)",prior:10,mod:(a,s)=>s==="M"?1.3:1,
+     m:{labs:["Urinalysis (hematuria); creatinine","Non-contrast CT KUB or ultrasound","Urine culture if pyuria/fever"],
+     tx:["NSAID first-line: ketorolac 30 mg IV/IM or diclofenac 75 mg IM","Tamsulosin 0.4 mg daily up to 4 weeks for distal stones 5–10 mm","Infected obstructed kidney: urgent decompression + antibiotics"],
+     dispo:"Outpatient if pain controlled; urology if >10 mm, infection, AKI or single kidney.",
+     src:"AUA/Endourological Society 2016; EAU Urolithiasis Guidelines"}}
+  ],
+  hx:[
+    {id:"a1",q:"Pain started periumbilical then moved to right lower quadrant",s:"migration to RLQ",lr:{app:[3.2,.5]}},
+    {id:"a2",q:"Anorexia",s:"anorexia",lr:{app:[1.3,.6]}},
+    {id:"a3",q:"RUQ pain after fatty meals",s:"postprandial RUQ pain",lr:{chol:[3,.4]}},
+    {id:"a4",q:"Severe epigastric pain radiating to the back; alcohol use or gallstones",s:"epigastric→back",lr:{panc:[4,.4]}},
+    {id:"a5",q:"Burning epigastric pain related to meals; NSAID use",s:"dyspeptic pain",lr:{pud:[3,.5]}},
+    {id:"a6",q:"Diarrhea",s:"diarrhea",lr:{age:[5,.2],app:[.6,1]}},
+    {id:"a7",q:"Vomiting",s:"vomiting",lr:{age:[1.5,.7],app:[1.3,.8],panc:[1.5,.6]}},
+    {id:"a8",q:"Missed period, possible pregnancy or vaginal bleeding",s:"possible pregnancy",lr:{ect:[8,.1]}},
+    {id:"a9",q:"Colicky flank pain radiating to groin; gross hematuria",s:"loin-to-groin colic",lr:{ston:[6,.3]}},
+    {id:"a10",q:"Sick contacts or suspect food",s:"food/sick contacts",lr:{age:[2.5,.8]}}
+  ],
+  pe:[
+    {id:"ap1",q:"McBurney point tenderness",s:"McBurney tenderness",lr:{app:[3.4,.4]}},
+    {id:"ap2",q:"Rovsing or psoas sign",s:"Rovsing/psoas",lr:{app:[2.5,.8]}},
+    {id:"ap3",q:"Rebound tenderness or guarding",s:"peritoneal signs",lr:{app:[2,.6],chol:[1.5,.9],age:[.4,1]}},
+    {id:"ap4",q:"Murphy sign",s:"Murphy sign",lr:{chol:[2.8,.5]}},
+    {id:"ap5",q:"Epigastric tenderness",s:"epigastric tenderness",lr:{pud:[2,.6],panc:[1.5,.5]}},
+    {id:"ap6",q:"Costovertebral angle tenderness",s:"CVA tenderness",lr:{ston:[3,.6]}},
+    {id:"ap7",q:"Adnexal or cervical motion tenderness",s:"adnexal tenderness",lr:{ect:[3,.6]}},
+    {id:"ap8",q:"HR >100 or SBP <90",s:"tachycardia/hypotension",lr:{ect:[2,.9],panc:[1.5,.95]}},
+    {id:"ap9",q:"Hyperactive bowel sounds",s:"hyperactive BS",lr:{age:[2,.8]}}
+  ]
+},
+head:{
+  name:"Headache", hint:"Acute or recurrent headache",
+  flags:["Thunderclap onset (peak <1 min)","Fever with neck stiffness or petechial rash","New focal deficit, papilledema or altered consciousness","BP ≥180/120 with symptoms","New headache after 50, in pregnancy, cancer or immunocompromise"],
+  dx:[
+    {id:"mig",name:"Migraine",prior:30,mod:a=>a>50?.4:1,
+     m:{labs:["None if typical history and normal neuro exam","Neuroimaging only with red flags"],
+     tx:["Mild–moderate: ibuprofen 400–600 mg, naproxen 500 mg or paracetamol 1 g ± metoclopramide 10 mg","Moderate–severe: sumatriptan 50–100 mg PO (avoid in CAD, uncontrolled HTN)","ED: IV metoclopramide 10 mg; dexamethasone 10 mg IV reduces recurrence","Limit acute meds to <10 days/month; preventive therapy if ≥4 headache days/month"],
+     dispo:"Outpatient; headache diary.",
+     src:"American Headache Society Consensus Statement 2021; AAN/AHS guidelines"}},
+    {id:"tth",name:"Tension-type headache",prior:40,
+     m:{labs:["None if exam normal"],
+     tx:["Paracetamol 1 g or ibuprofen 400 mg PRN","Avoid medication overuse (simple analgesics <15 days/month)","Chronic: amitriptyline 10–25 mg at night; stress management, posture, exercise"],
+     dispo:"Outpatient.",
+     src:"EFNS Guideline on Tension-Type Headache 2010"}},
+    {id:"sah",name:"Subarachnoid hemorrhage",prior:2,miss:true,
+     m:{labs:["Non-contrast CT head immediately (highly sensitive within 6 h)","If CT negative and >6 h: lumbar puncture for xanthochromia, or CT angiography","CBC, PT/INR, aPTT, type and screen, electrolytes, ECG"],
+     tx:["Neurosurgical referral; secure aneurysm early","Nimodipine 60 mg PO q4h ×21 d","Keep SBP <160 mmHg before aneurysm is secured","Treat pain and nausea; reverse anticoagulation"],
+     dispo:"ICU / neurosurgical center.",
+     src:"2023 AHA/ASA Aneurysmal SAH Guideline; Ottawa SAH Rule"}},
+    {id:"men",name:"Bacterial meningitis",prior:3,miss:true,
+     m:{labs:["Blood cultures immediately (before antibiotics)","CT head before LP only if immunocompromised, seizure, papilledema, focal deficit or altered consciousness","Lumbar puncture: opening pressure, cell count, glucose, protein, Gram stain, culture","CBC, creatinine, electrolytes, RBS"],
+     tx:["Do not delay antibiotics for imaging","Dexamethasone 0.15 mg/kg IV q6h ×2–4 d, before or with first antibiotic dose","Ceftriaxone 2 g IV q12h + vancomycin 15–20 mg/kg IV q8–12h","Add ampicillin 2 g IV q4h if >50 y, immunocompromised or pregnant"],
+     dispo:"Admit; ICU if unstable. Droplet precautions; notify.",
+     src:"IDSA Bacterial Meningitis Guideline 2004; ESCMID 2016"}},
+    {id:"hte",name:"Hypertensive emergency",prior:4,miss:true,mod:a=>a>40?2:.5,
+     m:{labs:["ECG, troponin, creatinine, electrolytes, urinalysis","CBC with smear (hemolysis), fundoscopy","CT head if neurologic signs"],
+     tx:["ICU; IV labetalol or nicardipine infusion","Lower SBP by no more than 25% in the first hour, then to 160/100–110 over 2–6 h, then normal over 24–48 h","Exceptions: aortic dissection (SBP <120 within 1 h), stroke-specific targets","No target organ damage = urgency: oral agents, gradual lowering"],
+     dispo:"ICU admission for emergency.",
+     src:"2017 ACC/AHA Hypertension Guideline; Philippine Heart Association/PSH guidance"}},
+    {id:"sol",name:"Intracranial mass / hemorrhage",prior:2,miss:true,mod:a=>a>50?3:1,
+     m:{labs:["CT head (non-contrast first); MRI with contrast","CBC, coagulation profile, RBS"],
+     tx:["Dexamethasone for symptomatic vasogenic edema from tumor","Reverse anticoagulation in hemorrhage","Neurosurgical referral"],
+     dispo:"Admit; neurosurgery.",
+     src:"AHA/ASA 2022 Spontaneous ICH Guideline; EANO"}}
+  ],
+  hx:[
+    {id:"h1",q:"Thunderclap onset – worst ever, peak within 1 minute",s:"thunderclap onset",lr:{sah:[10,.1],tth:[.3,1.1],mig:[.4,1.1]}},
+    {id:"h2",q:"At least 4 of: pulsating, 4–72 h, unilateral, nausea, disabling",s:"migraine features (POUND)",lr:{mig:[10,.4]}},
+    {id:"h3",q:"Bilateral, pressing, band-like; no nausea",s:"band-like pain",lr:{tth:[3,.5]}},
+    {id:"h4",q:"Fever",s:"fever",lr:{men:[3,.3]}},
+    {id:"h5",q:"Progressive; worse in morning or with coughing/straining; vomiting",s:"raised-ICP pattern",lr:{sol:[4,.7]}},
+    {id:"h6",q:"Known hypertension, poor adherence; blurred vision or chest pain",s:"HTN history",lr:{hte:[3,.7]}},
+    {id:"h7",q:"Onset during exertion or with syncope",s:"exertional onset/syncope",lr:{sah:[3,.8]}},
+    {id:"h8",q:"Immunocompromise or known cancer",s:"immunocompromise/cancer",lr:{sol:[3,.9],men:[2,.95]}},
+    {id:"h9",q:"Similar headaches in the past",s:"recurrent similar",lr:{mig:[2,.5],tth:[2,.5],sah:[.3,1.2],sol:[.4,1.2]}}
+  ],
+  pe:[
+    {id:"hp1",q:"BP ≥180/120 with end-organ signs",s:"severe HTN + organ signs",lr:{hte:[10,.1]}},
+    {id:"hp2",q:"Neck stiffness",s:"neck stiffness",lr:{sah:[3,.7],men:[2,.7]}},
+    {id:"hp3",q:"Jolt accentuation of headache",s:"jolt accentuation",lr:{men:[2,.4]}},
+    {id:"hp4",q:"Altered mentation (GCS <15)",s:"altered mentation",lr:{sah:[3,.8],men:[2.5,.8],sol:[2,.9]}},
+    {id:"hp5",q:"Focal neurologic deficit or papilledema",s:"focal deficit/papilledema",lr:{sol:[6,.6],sah:[2,.9]}},
+    {id:"hp6",q:"Petechial or purpuric rash",s:"petechial rash",lr:{men:[5,.95]}},
+    {id:"hp7",q:"Pericranial muscle tenderness",s:"pericranial tenderness",lr:{tth:[2,.8]}},
+    {id:"hp8",q:"Temperature ≥38 °C",s:"febrile",lr:{men:[3,.4]}}
+  ]
+}
+};
+function KB_CAP(){return null}
+KB.cough.dx[0].m = KB.fever.dx.find(d=>d.id==="cap").m;
+
+const SOURCES = [
+  "Philippine CPG on Community-Acquired Pneumonia in Immunocompetent Adults – PSMID 2016 Update and 2020 Update",
+  "DOH Dengue clinical management guidelines; PhilHealth Circular 2026-0009; WHO Dengue Guidelines (2009) and Handbook (2012)",
+  "PSMID Philippine CPG on UTI in Adults (2015); IDSA uncomplicated (2011) and complicated UTI (2025) guidelines",
+  "Philippine CPG on Leptospirosis (2010); DOH NTP Manual of Procedures 6th ed.; DOH Malaria Program",
+  "2021 AHA/ACC Chest Pain Guideline; 2025 ACC/AHA ACS Guideline; 2023 ESC ACS; 2019 ESC PE; 2022 ACC/AHA Aortic Disease; BTS 2023 Pleural Disease; ESC Pericardial Disease",
+  "GINA and GOLD current reports; 2022 AHA/ACC/HFSA Heart Failure Guideline",
+  "WSES 2020 Appendicitis; Tokyo Guidelines 2018; ACG 2024 Acute Pancreatitis; ACG 2024 H. pylori; ACOG 193 Ectopic Pregnancy; AUA/EAU Urolithiasis; IDSA 2017 Infectious Diarrhea",
+  "AHS 2021 Migraine Consensus; 2023 AHA/ASA aSAH; IDSA 2004/ESCMID 2016 Meningitis; 2017 ACC/AHA Hypertension",
+  "Likelihood ratios: JAMA Rational Clinical Examination series; McGee, Evidence-Based Physical Diagnosis; Harrison’s Principles of Internal Medicine; Bates’ Guide to Physical Examination"
+];
+
+/* ============================================================ ENGINE */
+const S = {step:0, age:"", sex:"", cc:"", ans:{}};
+
+function weights(){
+  const c = KB[S.cc]; if(!c) return [];
+  const age = +S.age, sex = S.sex;
+  const feats = c.hx.concat(c.pe);
+  let list = c.dx.map(d=>{
+    const mod = d.mod ? d.mod(age,sex) : 1;
+    let w = d.prior * mod, contrib=[];
+    if(mod>0) feats.forEach(f=>{
+      const a = S.ans[f.id], lr = f.lr[d.id];
+      if(!a || a==="u" || !lr) return;
+      const v = a==="y" ? lr[0] : lr[1];
+      w *= v;
+      if(v!==1) contrib.push({s:(a==="y"?"":"no ")+f.s, v});
+    });
+    return {d, w, contrib, excluded: mod===0};
+  });
+  const tot = list.reduce((t,x)=>t+x.w,0) || 1;
+  list.forEach(x=>x.p = x.w/tot);
+  return list.filter(x=>!x.excluded).sort((a,b)=>b.p-a.p);
+}
+function status(p,i){
+  if(i===0 && p>=.4) return ["lead","Most likely"];
+  if(p>=.15) return ["pos","Possible"];
+  if(p>=.03) return ["low","Less likely"];
+  return ["low","Ruled out (low probability)"];
+}
+const pct = p => (p<.01 ? "<1" : Math.round(p*100)) + "%";
+
+/* ============================================================ RENDER */
+const $ = s => document.querySelector(s);
+const STEPS = ["Patient","History","Exam","Plan"];
+
+function render(){
+  $("#steps").innerHTML = STEPS.map((n,i)=>`<li class="${i===S.step?"on":i<S.step?"done":""}">${i+1}. ${n}</li>`).join("");
+  [renderPatient,renderHistory,renderExam,renderPlan][S.step]();
+  renderAside();
+  $("#foot").innerHTML = `<b>Sources</b><ol>${SOURCES.map(s=>`<li>${s}</li>`).join("")}</ol><p>Probabilities are estimates from prior weights × likelihood ratios. They support, not replace, clinical judgment.</p>`;
+}
+
+function renderPatient(){
+  const ccs = Object.entries(KB).map(([k,v])=>`<button class="cc" aria-pressed="${S.cc===k}" data-cc="${k}"><b>${v.name}</b><span>${v.hint}</span></button>`).join("");
+  const c = KB[S.cc];
+  const kid = S.age!=="" && +S.age<18;
+  $("#main").innerHTML = `<div class="panel">
+    <h1>Who is the patient?</h1>
+    <p class="lead">Age and sex adjust the starting likelihood of each diagnosis.</p>
+    <div class="row">
+      <div><label class="f" for="age">Age (years)</label><input id="age" type="number" min="0" max="120" inputmode="numeric" value="${S.age}"></div>
+      <div><label class="f" for="sex">Sex</label><select id="sex"><option value="">Select</option><option value="M" ${S.sex==="M"?"selected":""}>Male</option><option value="F" ${S.sex==="F"?"selected":""}>Female</option></select></div>
+    </div>
+    ${kid?`<div class="notice">Pathways and doses here are for adults. For patients under 18, use PPS/PIDSP pediatric guidelines.</div>`:""}
+    <label class="f">Chief complaint</label>
+    <div class="cc-grid">${ccs}</div>
+    ${c?`<div class="flags"><b>Red flags – act immediately if present</b><ul>${c.flags.map(f=>`<li>${f}</li>`).join("")}</ul></div>`:""}
+    <div class="nav"><span></span><button class="btn primary" id="next" ${S.age===""||!S.sex||!S.cc?"disabled":""}>Start history</button></div>
+  </div>`;
+  $("#age").oninput = e=>{S.age=e.target.value; refreshPatientBtn()};
+  $("#age").onchange = ()=>render();
+  $("#sex").onchange = e=>{S.sex=e.target.value; render()};
+  document.querySelectorAll(".cc").forEach(b=>b.onclick=()=>{ if(S.cc!==b.dataset.cc) S.ans={}; S.cc=b.dataset.cc; render()});
+  $("#next").onclick = ()=>go(1);
+}
+function refreshPatientBtn(){ $("#next").disabled = S.age===""||!S.sex||!S.cc; renderAside(); }
+
+function qRow(f, showTests){
+  const v = S.ans[f.id]||"";
+  const names = showTests ? Object.keys(f.lr).map(id=>KB[S.cc].dx.find(d=>d.id===id)?.name).filter(Boolean).join(", ") : "";
+  return `<div class="q"><div class="t">${f.q}${showTests?`<span class="tests">Helps assess: ${names}</span>`:""}</div>
+    <div class="seg" role="group" aria-label="${f.q}">
+      <button data-id="${f.id}" data-v="y" aria-pressed="${v==="y"}">Yes</button>
+      <button data-id="${f.id}" data-v="n" aria-pressed="${v==="n"}">No</button>
+      <button data-id="${f.id}" data-v="u" aria-pressed="${v==="u"}">?</button>
+    </div></div>`;
+}
+function bindSeg(){
+  document.querySelectorAll(".seg button").forEach(b=>b.onclick=()=>{
+    const id=b.dataset.id, v=b.dataset.v;
+    S.ans[id] = S.ans[id]===v ? undefined : v;
+    b.parentElement.querySelectorAll("button").forEach(x=>x.setAttribute("aria-pressed", x.dataset.v===S.ans[id]));
+    renderAside();
+  });
+}
+
+function renderHistory(){
+  const c = KB[S.cc];
+  $("#main").innerHTML = `<div class="panel">
+    <h1>History: ${c.name.toLowerCase()}</h1>
+    <p class="lead">${S.age}-year-old ${S.sex==="M"?"male":"female"}. Answer what you know; use “?” or leave blank if unknown.</p>
+    ${c.hx.map(f=>qRow(f,false)).join("")}
+    <div class="nav"><button class="btn" id="back">Back</button><button class="btn primary" id="next">Continue to physical exam</button></div>
+  </div>`;
+  bindSeg(); $("#back").onclick=()=>go(0); $("#next").onclick=()=>go(2);
+}
+
+function relevantExam(){
+  const c = KB[S.cc], w = weights();
+  const rel = new Set(w.filter(x=>x.p>=.02 || (x.d.miss && x.p>=.005)).map(x=>x.d.id));
+  return c.pe
+    .filter(f=>Object.keys(f.lr).some(id=>rel.has(id)))
+    .map(f=>({f, power:Math.max(...Object.entries(f.lr).filter(([id])=>rel.has(id)).map(([,v])=>Math.max(Math.abs(Math.log(v[0])),Math.abs(Math.log(v[1])))))}))
+    .sort((a,b)=>b.power-a.power).map(x=>x.f);
+}
+function renderExam(){
+  const list = relevantExam();
+  const hidden = KB[S.cc].pe.length - list.length;
+  $("#main").innerHTML = `<div class="panel">
+    <h1>Targeted physical exam</h1>
+    <p class="lead">Ordered by how much each finding separates the diagnoses still in play. Record what you find.</p>
+    ${list.map(f=>qRow(f,true)).join("")}
+    ${hidden>0?`<p class="hint">${hidden} exam item(s) hidden because they only test diagnoses already ruled out.</p>`:""}
+    <div class="nav"><button class="btn" id="back">Back</button><button class="btn primary" id="next">Show diagnosis and plan</button></div>
+  </div>`;
+  bindSeg(); $("#back").onclick=()=>go(1); $("#next").onclick=()=>go(3);
+}
+
+function why(x){
+  const f = x.contrib.filter(c=>c.v>1).sort((a,b)=>b.v-a.v).slice(0,3).map(c=>c.s);
+  const a = x.contrib.filter(c=>c.v<1).sort((a,b)=>a.v-b.v).slice(0,3).map(c=>c.s);
+  return [f.length?`For: ${f.join(", ")}`:"", a.length?`Against: ${a.join(", ")}`:""].filter(Boolean).join(" | ") || "Based on age, sex and prevalence only";
+}
+function mgmt(d){
+  const m=d.m;
+  return `<h3>Labs and diagnostics</h3><ul>${m.labs.map(x=>`<li>${x}</li>`).join("")}</ul>
+    <h3>Treatment</h3><ul>${m.tx.map(x=>`<li>${x}</li>`).join("")}</ul>
+    <div class="dispo"><b>Disposition:</b> ${m.dispo}</div>
+    <div class="src">Basis: ${m.src}</div>`;
+}
+function renderPlan(){
+  const w = weights();
+  const misses = w.filter((x,i)=>x.d.miss && x.p<.15 && i>0);
+  const cards = w.map((x,i)=>{
+    const [cls,label] = status(x.p,i);
+    return `<details class="dxcard" ${i===0?"open":""}><summary>
+      <span class="title">${x.d.name}<span class="tag ${cls}">${label}</span>${x.d.miss?'<span class="tag miss">Can’t miss</span>':""}</span>
+      <span class="big">${pct(x.p)}</span><span class="why">${why(x)}</span></summary>
+      <div class="body">${mgmt(x.d)}</div></details>`;
+  }).join("");
+  $("#main").innerHTML = `<div class="panel">
+    <h1>Differential and plan</h1>
+    <p class="lead">Tap any diagnosis to see its work-up and CPG-based treatment.</p>
+    ${misses.length?`<div class="missbox"><b>Before closing:</b> low score does not exclude ${misses.map(x=>x.d.name.toLowerCase()).join(", ")}. If clinical concern remains, confirm with: ${misses.map(x=>x.d.m.labs[0].split(";")[0]).join("; ")}.</div>`:""}
+    ${cards}
+    <h3>Chart summary</h3>
+    <textarea id="sum" readonly>${summary(w)}</textarea>
+    <div class="nav"><button class="btn" id="back">Back</button><span><button class="btn" id="copy">Copy summary</button> <button class="btn primary" id="new">New patient</button></span></div>
+  </div>`;
+  $("#back").onclick=()=>go(2);
+  $("#copy").onclick=async()=>{try{await navigator.clipboard.writeText($("#sum").value);$("#copy").textContent="Copied"}catch(e){$("#sum").select()}};
+  $("#new").onclick=()=>{Object.assign(S,{step:0,age:"",sex:"",cc:"",ans:{}});render();scrollTo(0,0)};
+}
+function summary(w){
+  const c=KB[S.cc], all=c.hx.concat(c.pe);
+  const pos=all.filter(f=>S.ans[f.id]==="y").map(f=>f.s), neg=all.filter(f=>S.ans[f.id]==="n").map(f=>f.s);
+  const top=w[0];
+  return `${S.age}/${S.sex} – CC: ${c.name}
+Pertinent (+): ${pos.join(", ")||"none recorded"}
+Pertinent (−): ${neg.join(", ")||"none recorded"}
+Assessment: ${w.slice(0,4).map(x=>`${x.d.name} ${pct(x.p)}`).join("; ")}
+Plan (${top.d.name}):
+- Labs: ${top.d.m.labs.join("; ")}
+- Tx: ${top.d.m.tx.join("; ")}
+- Dispo: ${top.d.m.dispo}`;
+}
+
+function renderAside(){
+  const w = weights();
+  if(!w.length){ $("#aside").innerHTML = `<div class="panel"><h2>Live differential</h2><p class="hint">Choose a chief complaint to see the differential update as you answer.</p></div>`; return; }
+  const answered = Object.values(S.ans).filter(v=>v==="y"||v==="n").length;
+  const show = window.matchMedia("(max-width:860px)").matches && S.step<3 ? w.slice(0,4) : w;
+  $("#aside").innerHTML = `<div class="panel" aria-live="polite"><h2>Live differential</h2>
+    <ul class="ddx">${show.map((x,i)=>{const [cls,label]=status(x.p,i);return `<li class="${x.p<.03?"out":""}"><div class="nm"><span>${x.d.name}${x.d.miss?'<span class="tag miss">!</span>':""}</span><span class="pc">${pct(x.p)}</span></div><div class="bar"><i style="width:${Math.max(1,x.p*100)}%"></i></div></li>`}).join("")}</ul>
+    <p class="hint">${answered} finding${answered===1?"":"s"} entered. <span class="tag miss">!</span> = can’t-miss diagnosis.</p></div>`;
+}
+
+function go(n){S.step=n; render(); scrollTo({top:0,behavior:matchMedia("(prefers-reduced-motion:reduce)").matches?"auto":"smooth"});}
+render();
+</script>
+</body>
+</html>
